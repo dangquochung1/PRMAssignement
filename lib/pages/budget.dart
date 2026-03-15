@@ -45,13 +45,15 @@ class _BudgetState extends State<Budget> {
       groups = decoded.map((e) => Map<String, dynamic>.from(e)).toList();
     }
 
-    // Load wallets → tính tổng tài sản
+    // Load wallets → tính tổng tài sản (bỏ qua ví theo dõi)
     String? walletJson = await SharedPreferenceHelper().getWallets();
     tongTaiSan = 0;
     if (walletJson != null && walletJson.isNotEmpty) {
       List<dynamic> wallets = jsonDecode(walletJson);
       for (var w in wallets) {
-        tongTaiSan += (w["amount"] ?? 0).toDouble();
+        if (w is Map && w["type"] != "Tracking") {
+          tongTaiSan += (w["amount"] ?? 0).toDouble();
+        }
       }
     }
 

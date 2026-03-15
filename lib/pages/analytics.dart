@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
@@ -5,14 +6,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:prmproject/services/database.dart';
 import 'package:prmproject/services/shared_pref.dart';
 
-class Home extends StatefulWidget {
-  const Home({super.key});
+class Analytics extends StatefulWidget {
+  const Analytics({super.key});
 
   @override
-  State<Home> createState() => _HomeState();
+  State<Analytics> createState() => _AnalyticsState();
 }
 
-class _HomeState extends State<Home> {
+class _AnalyticsState extends State<Analytics> {
   bool isExpenseTab = true;
   DateTime selectedDate = DateTime.now();
   List<Map<String, dynamic>> allTransactions = [];
@@ -58,6 +59,18 @@ class _HomeState extends State<Home> {
     String? userId = await SharedPreferenceHelper().getUserId();
     if (userId == null) return;
     try {
+      // 1. Đọc danh sách ví để lấy các thẻ Ví theo dõi
+      List<String> trackingWalletNames = [];
+      String? walletJson = await SharedPreferenceHelper().getWallets();
+      if (walletJson != null && walletJson.isNotEmpty) {
+        List<dynamic> decoded = jsonDecode(walletJson);
+        for (var w in decoded) {
+          if (w is Map && w["type"] == "Tracking") {
+            trackingWalletNames.add(w["name"] ?? "");
+          }
+        }
+      }
+
       QuerySnapshot snapshot = await DatabaseMethdos().getTransactions(userId);
       List<Map<String, dynamic>> temp = [];
       Set<String> eCategories = {};
@@ -65,6 +78,11 @@ class _HomeState extends State<Home> {
 
       for (var doc in snapshot.docs) {
         var data = doc.data() as Map<String, dynamic>;
+        
+        // Bỏ qua nếu giao dịch thuộc Ví theo dõi
+        String wName = data["WalletName"] ?? "";
+        if (trackingWalletNames.contains(wName)) continue;
+
         data["id"] = doc.id;
         temp.add(data);
 
@@ -496,17 +514,32 @@ class _HomeState extends State<Home> {
                    Row(
                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                      children: [
-                        Row(
-                           children: [
-                              Container(width: 12, height: 12, decoration: const BoxDecoration(color: Color(0xFFFBCA10), shape: BoxShape.circle)),
-                              const SizedBox(width: 4),
-                              const Text("Chi tiêu", style: TextStyle(fontSize: 14)),
-                              const SizedBox(width: 12),
-                              Container(width: 12, height: 12, decoration: const BoxDecoration(color: Color(0xFF2FB870), shape: BoxShape.circle)),
-                              const SizedBox(width: 4),
-                              const Text("Thu nhập", style: TextStyle(fontSize: 14)),
-                           ]
+                        Expanded(
+                          child: Wrap(
+                             spacing: 12,
+                             runSpacing: 4,
+                             crossAxisAlignment: WrapCrossAlignment.center,
+                             children: [
+                                Row(
+                                   mainAxisSize: MainAxisSize.min,
+                                   children: [
+                                      Container(width: 12, height: 12, decoration: const BoxDecoration(color: Color(0xFFFBCA10), shape: BoxShape.circle)),
+                                      const SizedBox(width: 4),
+                                      const Text("Chi tiêu", style: TextStyle(fontSize: 14)),
+                                   ]
+                                ),
+                                Row(
+                                   mainAxisSize: MainAxisSize.min,
+                                   children: [
+                                      Container(width: 12, height: 12, decoration: const BoxDecoration(color: Color(0xFF2FB870), shape: BoxShape.circle)),
+                                      const SizedBox(width: 4),
+                                      const Text("Thu nhập", style: TextStyle(fontSize: 14)),
+                                   ]
+                                ),
+                             ]
+                          ),
                         ),
+                        const SizedBox(width: 8),
                         GestureDetector(
                            onTap: () => _showTimePicker(summaryMonths, (v) => setState(() => summaryMonths = v)),
                            child: Container(
@@ -516,6 +549,7 @@ class _HomeState extends State<Home> {
                                  borderRadius: BorderRadius.circular(8)
                               ),
                               child: Row(
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Text("$summaryMonths tháng gần đây", style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
                                   const SizedBox(width: 4),
@@ -527,19 +561,25 @@ class _HomeState extends State<Home> {
                      ],
                    ),
                    const SizedBox(height: 40),
-                   SizedBox(
-                      height: 200,
-                      child: BarChart(
-                         BarChartData(
-                            alignment: BarChartAlignment.spaceAround,
-                            maxY: maxVal * 1.2,
-                            barTouchData: BarTouchData(enabled: false),
-                            titlesData: FlTitlesData(
-                               show: true,
-                               bottomTitles: AxisTitles(
-                                  sideTitles: SideTitles(
-                                     showTitles: true,
-                                     getTitlesWidget: (value, meta) {
+                   SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: SizedBox(
+                         height: 200,
+                         width: data.length > 3 
+                              ? (MediaQuery.of(context).size.width - 72) / 3 * data.length 
+                              : MediaQuery.of(context).size.width - 72,
+                         child: BarChart(
+                            BarChartData(
+                               alignment: BarChartAlignment.spaceAround,
+                               maxY: maxVal * 1.2,
+                               barTouchData: BarTouchData(enabled: false),
+                               titlesData: FlTitlesData(
+                                  show: true,
+                                  bottomTitles: AxisTitles(
+                                     sideTitles: SideTitles(
+                                        showTitles: true,
+                                        reservedSize: 32,
+                                        getTitlesWidget: (value, meta) {
                                         if (value.toInt() >= 0 && value.toInt() < data.length) {
                                            return Padding(
                                              padding: const EdgeInsets.only(top: 8.0),
@@ -583,6 +623,7 @@ class _HomeState extends State<Home> {
                             })
                          )
                       )
+                   ),
                    ),
                    const SizedBox(height: 20),
                    const Divider(),
@@ -676,13 +717,24 @@ class _HomeState extends State<Home> {
                    Row(
                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                      children: [
-                        Row(
-                           children: [
-                              Container(width: 10, height: 10, decoration: const BoxDecoration(color: Color(0xFFFBCA10), shape: BoxShape.circle)),
-                              const SizedBox(width: 8),
-                              const Text("Chi tiêu", style: TextStyle(fontSize: 14)),
-                           ]
+                        Expanded(
+                          child: Wrap(
+                             spacing: 8,
+                             runSpacing: 4,
+                             crossAxisAlignment: WrapCrossAlignment.center,
+                             children: [
+                                Row(
+                                   mainAxisSize: MainAxisSize.min,
+                                   children: [
+                                      Container(width: 10, height: 10, decoration: const BoxDecoration(color: Color(0xFFFBCA10), shape: BoxShape.circle)),
+                                      const SizedBox(width: 8),
+                                      const Text("Chi tiêu", style: TextStyle(fontSize: 14)),
+                                   ]
+                                ),
+                             ]
+                          ),
                         ),
+                        const SizedBox(width: 8),
                         GestureDetector(
                            onTap: () => _showTimePicker(categoryMonths, (v) => setState(() => categoryMonths = v)),
                            child: Container(
@@ -692,6 +744,7 @@ class _HomeState extends State<Home> {
                                  borderRadius: BorderRadius.circular(8)
                               ),
                               child: Row(
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Text("$categoryMonths tháng gần đây", style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
                                   const SizedBox(width: 4),
@@ -703,18 +756,24 @@ class _HomeState extends State<Home> {
                      ],
                    ),
                    const SizedBox(height: 40),
-                   SizedBox(
-                      height: 200,
-                      child: LineChart(
-                         LineChartData(
-                            minY: 0,
-                            maxY: maxVal * 1.2,
-                            titlesData: FlTitlesData(
-                               show: true,
-                               bottomTitles: AxisTitles(
-                                  sideTitles: SideTitles(
-                                     showTitles: true,
-                                     getTitlesWidget: (value, meta) {
+                   SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: SizedBox(
+                         height: 200,
+                         width: data.length > 3 
+                              ? (MediaQuery.of(context).size.width - 72) / 3 * data.length 
+                              : MediaQuery.of(context).size.width - 72,
+                         child: LineChart(
+                            LineChartData(
+                               minY: 0,
+                               maxY: maxVal * 1.2,
+                               titlesData: FlTitlesData(
+                                  show: true,
+                                  bottomTitles: AxisTitles(
+                                     sideTitles: SideTitles(
+                                        showTitles: true,
+                                        reservedSize: 32,
+                                        getTitlesWidget: (value, meta) {
                                         if (value.toInt() >= 0 && value.toInt() < data.length) {
                                            return Padding(
                                              padding: const EdgeInsets.only(top: 8.0),
@@ -761,7 +820,8 @@ class _HomeState extends State<Home> {
                          )
                       )
                    ),
-                   const SizedBox(height: 20),
+                   ),
+                  const SizedBox(height: 20),
                    const Divider(),
                    const SizedBox(height: 10),
                    Align(
@@ -839,13 +899,24 @@ class _HomeState extends State<Home> {
                    Row(
                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                      children: [
-                        Row(
-                           children: [
-                              Container(width: 10, height: 10, decoration: const BoxDecoration(color: Color(0xFFFBCA10), shape: BoxShape.circle)),
-                              const SizedBox(width: 8),
-                              const Text("Tổng cộng", style: TextStyle(fontSize: 14)),
-                           ]
+                        Expanded(
+                          child: Wrap(
+                             spacing: 8,
+                             runSpacing: 4,
+                             crossAxisAlignment: WrapCrossAlignment.center,
+                             children: [
+                                Row(
+                                   mainAxisSize: MainAxisSize.min,
+                                   children: [
+                                      Container(width: 10, height: 10, decoration: const BoxDecoration(color: Color(0xFFFBCA10), shape: BoxShape.circle)),
+                                      const SizedBox(width: 8),
+                                      const Text("Tổng cộng", style: TextStyle(fontSize: 14)),
+                                   ]
+                                ),
+                             ]
+                          ),
                         ),
+                        const SizedBox(width: 8),
                         GestureDetector(
                            onTap: () => _showTimePicker(walletMonths, (v) => setState(() => walletMonths = v)),
                            child: Container(
@@ -855,6 +926,7 @@ class _HomeState extends State<Home> {
                                  borderRadius: BorderRadius.circular(8)
                               ),
                               child: Row(
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Text("$walletMonths tháng gần đây", style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
                                   const SizedBox(width: 4),
@@ -866,18 +938,24 @@ class _HomeState extends State<Home> {
                      ],
                    ),
                    const SizedBox(height: 40),
-                   SizedBox(
-                      height: 200,
-                      child: LineChart(
-                         LineChartData(
-                            minY: 0,
-                            maxY: maxVal * 1.2,
-                            titlesData: FlTitlesData(
-                               show: true,
-                               bottomTitles: AxisTitles(
-                                  sideTitles: SideTitles(
-                                     showTitles: true,
-                                     getTitlesWidget: (value, meta) {
+                   SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: SizedBox(
+                         height: 200,
+                         width: data.length > 3 
+                              ? (MediaQuery.of(context).size.width - 72) / 3 * data.length 
+                              : MediaQuery.of(context).size.width - 72,
+                         child: LineChart(
+                            LineChartData(
+                               minY: 0,
+                               maxY: maxVal * 1.2,
+                               titlesData: FlTitlesData(
+                                  show: true,
+                                  bottomTitles: AxisTitles(
+                                     sideTitles: SideTitles(
+                                        showTitles: true,
+                                        reservedSize: 32,
+                                        getTitlesWidget: (value, meta) {
                                         if (value.toInt() >= 0 && value.toInt() < data.length) {
                                            return Padding(
                                              padding: const EdgeInsets.only(top: 8.0),
@@ -924,7 +1002,8 @@ class _HomeState extends State<Home> {
                          )
                       )
                    ),
-                ]
+                   ),
+                       ]
               )
             )
          ]

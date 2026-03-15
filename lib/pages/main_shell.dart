@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:prmproject/pages/budget.dart';
 import 'package:prmproject/pages/wallet.dart';
-import 'package:prmproject/pages/home.dart';
+import 'package:prmproject/pages/analytics.dart';
 import 'package:prmproject/pages/profile.dart';
 import 'package:prmproject/pages/add_transaction.dart';
 
@@ -23,7 +23,7 @@ class _MainShellState extends State<MainShell> {
     Budget(),    // 0 — Ngân sách
     Wallet(),    // 1 — Ví tiền
     SizedBox(),  // 2 — Placeholder cho nút +
-    Home(),      // 3 — Phân tích (dashboard hiện tại)
+    Analytics(), // 3 — Phân tích (dashboard hiện tại)
     Profile(),   // 4 — Cài đặt
   ];
 

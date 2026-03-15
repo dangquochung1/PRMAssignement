@@ -2,7 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
 // Đã đổi lại thành dạng import package để đồng nhất với các file khác của bạn
-import 'package:prmproject/pages/home.dart';
+import 'package:prmproject/pages/analytics.dart';
 import 'package:prmproject/pages/onboarding.dart';
 import 'package:prmproject/pages/signup.dart';
 import 'package:prmproject/pages/login.dart';

@@ -74,27 +74,40 @@ class _WalletState extends State<Wallet> {
   }
 
   // Tính tổng tài sản
-  double get tongTaiSan {
+  double get tongTaiSan => tongThanhToan + tongTheoDoi;
+
+  double get tongThanhToan {
     double total = 0;
     for (var vi in wallets) {
-      total += (vi["amount"] ?? 0).toDouble();
+      if (vi["type"] != "Tracking") {
+        total += (vi["amount"] ?? 0).toDouble();
+      }
     }
     return total;
   }
 
-  // ---- BOTTOM SHEET: TẠO VÍ MỚI ----
-  void _showAddWalletSheet() {
-    TextEditingController nameController = TextEditingController();
-    TextEditingController amountController = TextEditingController();
+  double get tongTheoDoi {
+    double total = 0;
+    for (var vi in wallets) {
+      if (vi["type"] == "Tracking") {
+        total += (vi["amount"] ?? 0).toDouble();
+      }
+    }
+    return total;
+  }
 
+  // ---- BOTTOM SHEET: CHỌN LOẠI VÍ ----
+  void _showAddWalletSheet() {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      backgroundColor: Colors.transparent,
       builder: (context) {
-        return Padding(
+        return Container(
+          decoration: const BoxDecoration(
+            color: Color(0xFFF5F5F0),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
           padding: EdgeInsets.only(
             left: 20, right: 20, top: 20,
             bottom: MediaQuery.of(context).viewInsets.bottom + 20,
@@ -104,64 +117,257 @@ class _WalletState extends State<Wallet> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Thanh kéo
-                Center(
+                Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(color: Colors.grey.shade300, shape: BoxShape.circle),
+                        child: const Icon(Icons.close, size: 20, color: Colors.black54),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                const Text("Tạo ví mới", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 20),
+
+                // Card: Ví thanh toán
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showCreateWalletForm(isTracking: false);
+                  },
                   child: Container(
-                    width: 40, height: 4,
+                    padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.grey[400],
-                      borderRadius: BorderRadius.circular(2),
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF4CAF50),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(Icons.payments_outlined, color: Colors.white, size: 24),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text("Ví thanh toán", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 6),
+                              Text(
+                                "Dành cho tài khoản chứa tiền mà bạn có thể sử dụng luôn hoặc dễ dàng rút ra sử dụng (Tiền mặt, tiết kiệm online, ví điện tử,...)",
+                                style: TextStyle(fontSize: 13, color: Colors.grey.shade700, height: 1.4),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Text("Tạo ví mới", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 16),
 
-                // Tên ví
-                const Text("Tên ví", style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                // Card: Ví theo dõi
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showCreateWalletForm(isTracking: true);
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF4CAF50),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(Icons.trending_up, color: Colors.white, size: 24),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text("Ví theo dõi", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 6),
+                              Text(
+                                "Dành cho việc theo dõi các khoản đầu tư dài hạn (Đất, cổ phiếu, vàng,...)",
+                                style: TextStyle(fontSize: 13, color: Colors.grey.shade700, height: 1.4),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 40),
+                
+                Center(
+                  child: Icon(Icons.psychology, color: Colors.amber.shade700, size: 50),
+                ),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFBE9A6),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    children: [
+                      RichText(
+                        text: const TextSpan(
+                          style: TextStyle(fontSize: 13, color: Colors.black87, height: 1.4),
+                          children: [
+                            TextSpan(text: "• Tiền trong Ví thanh toán sẽ được trở thành '"),
+                            TextSpan(text: "Tiền chưa có việc", style: TextStyle(fontWeight: FontWeight.bold)),
+                            TextSpan(text: "' và bạn sẽ cần '"),
+                            TextSpan(text: "giao việc", style: TextStyle(fontWeight: FontWeight.bold)),
+                            TextSpan(text: "' cho chúng.\n\n"),
+                            TextSpan(text: "• Tiền trong Ví theo dõi sẽ "),
+                            TextSpan(text: "chỉ có mục đích theo dõi", style: TextStyle(fontWeight: FontWeight.bold)),
+                            TextSpan(text: " giúp bạn biết được tổng tài sản của mình. Bạn "),
+                            TextSpan(text: "không cần giao việc", style: TextStyle(fontWeight: FontWeight.bold)),
+                            TextSpan(text: " cho chúng!"),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showCreateWalletForm({required bool isTracking}) {
+    TextEditingController nameController = TextEditingController();
+    TextEditingController amountController = TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Color(0xFFF5F5F0),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          padding: EdgeInsets.only(
+            left: 20, right: 20, top: 20,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(color: Colors.grey.shade300, shape: BoxShape.circle),
+                        child: const Icon(Icons.close, size: 20, color: Colors.black54),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Text(isTracking ? "Tạo ví theo dõi" : "Tạo ví thanh toán", style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 20),
+
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF4CAF50),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(isTracking ? Icons.trending_up : Icons.payments_outlined, color: Colors.white, size: 28),
+                    ),
+                    const SizedBox(width: 16),
+                    const Text("Thay đổi biểu tượng", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFFB8860B), decoration: TextDecoration.underline)),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                const Text("Tên của ví này", style: TextStyle(fontSize: 15, color: Colors.black87)),
                 const SizedBox(height: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFECECF8),
+                    color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.shade300),
                   ),
                   child: TextField(
                     controller: nameController,
                     decoration: const InputDecoration(
                       border: InputBorder.none,
-                      hintText: "Nhập tên ví",
+                      hintText: "Tên ví (vd: Tiền mặt,...)",
                       hintStyle: TextStyle(color: Colors.black38),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Số dư ban đầu
-                const Text("Số dư ban đầu", style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFECECF8),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: TextField(
-                    controller: amountController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      border: InputBorder.none,
-                      hintText: "0",
-                      hintStyle: TextStyle(color: Colors.black38),
-                      suffixText: "đ",
-                      suffixStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),
                 const SizedBox(height: 24),
 
-                // Nút LƯU
+                const Text("Hiện tại số dư trong ví của bạn là bao nhiêu?", style: TextStyle(fontSize: 15, color: Colors.black87)),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.shade300),
+                  ),
+                  child: Row(
+                    children: [
+                      const Text("đ", style: TextStyle(fontSize: 16, color: Colors.black54, decoration: TextDecoration.underline)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextField(
+                          controller: amountController,
+                          keyboardType: TextInputType.number,
+                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          decoration: const InputDecoration(
+                            border: InputBorder.none,
+                            hintText: "0",
+                            hintStyle: TextStyle(color: Colors.black38),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  "Bạn nhập số tiền càng chính xác thì chúng tôi có thể giúp bạn cập nhật ngân sách càng chính xác hơn",
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                ),
+                const SizedBox(height: 30),
+
                 GestureDetector(
                   onTap: () {
                     if (nameController.text.trim().isEmpty) {
@@ -175,6 +381,7 @@ class _WalletState extends State<Wallet> {
                       "name": nameController.text.trim(),
                       "amount": amount,
                       "isDefault": false,
+                      "type": isTracking ? "Tracking" : "Payment",
                     };
                     setState(() {
                       wallets.add(newWallet);
@@ -184,13 +391,13 @@ class _WalletState extends State<Wallet> {
                   },
                   child: Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF4CAF50),
+                      color: isTracking ? const Color(0xFFFBC02D) : const Color(0xFF4CAF50),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Center(
-                      child: Text("LƯU", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                      child: Text("LƯU VÍ", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
                     ),
                   ),
                 ),
@@ -248,7 +455,7 @@ class _WalletState extends State<Wallet> {
                             children: [
                               const Text("Thanh toán", style: TextStyle(color: Colors.white70, fontSize: 13)),
                               const SizedBox(height: 2),
-                              Text(formatVND(tongTaiSan), style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                              Text(formatVND(tongThanhToan), style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
                             ],
                           ),
                         ),
@@ -258,8 +465,7 @@ class _WalletState extends State<Wallet> {
                             children: [
                               const Text("Theo dõi", style: TextStyle(color: Colors.white70, fontSize: 13)),
                               const SizedBox(height: 2),
-                              // Theo dõi luôn = 0
-                              const Text("0đ", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                              Text(formatVND(tongTheoDoi), style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
                             ],
                           ),
                         ),
@@ -294,15 +500,15 @@ class _WalletState extends State<Wallet> {
                 child: const Text("Ví thanh toán", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               ),
               const SizedBox(height: 10),
-              // Hiện danh sách ví ngang
+              // Hiện danh sách ví thanh toán nganh
               SizedBox(
                 height: 90,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: wallets.length,
+                  itemCount: wallets.where((w) => w["type"] != "Tracking").length,
                   itemBuilder: (context, index) {
-                    var vi = wallets[index];
+                    var vi = wallets.where((w) => w["type"] != "Tracking").toList()[index];
                     bool isDefault = vi["isDefault"] == true;
                     return Container(
                       width: 140,
@@ -312,11 +518,7 @@ class _WalletState extends State<Wallet> {
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(14),
                         boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.04),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
+                          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 4, offset: const Offset(0, 2)),
                         ],
                       ),
                       child: Column(
@@ -329,26 +531,66 @@ class _WalletState extends State<Wallet> {
                               if (isDefault)
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFD4A843),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
+                                  decoration: BoxDecoration(color: const Color(0xFFD4A843), borderRadius: BorderRadius.circular(6)),
                                   child: const Text("Mặc định", style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w600)),
                                 ),
                             ],
                           ),
                           const Spacer(),
                           Text(vi["name"], style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500), overflow: TextOverflow.ellipsis),
-                          Text(
-                            formatVND((vi["amount"] ?? 0).toDouble()),
-                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                          ),
+                          Text(formatVND((vi["amount"] ?? 0).toDouble()), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                         ],
                       ),
                     );
                   },
                 ),
               ),
+
+              // ---- VÍ THEO DÕI ----
+              if (wallets.any((w) => w["type"] == "Tracking")) ...[
+                const SizedBox(height: 24),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: const Text("Ví theo dõi", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  height: 90,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: wallets.where((w) => w["type"] == "Tracking").length,
+                    itemBuilder: (context, index) {
+                      var vi = wallets.where((w) => w["type"] == "Tracking").toList()[index];
+                      return Container(
+                        width: 140,
+                        margin: const EdgeInsets.only(right: 10),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: [
+                            BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 4, offset: const Offset(0, 2)),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Row(
+                              children: [
+                                Icon(Icons.trending_up, color: Color(0xFFFBC02D), size: 20),
+                              ],
+                            ),
+                            const Spacer(),
+                            Text(vi["name"], style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500), overflow: TextOverflow.ellipsis),
+                            Text(formatVND((vi["amount"] ?? 0).toDouble()), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
               const SizedBox(height: 24),
 
               // ---- LỊCH SỬ GIAO DỊCH ----
