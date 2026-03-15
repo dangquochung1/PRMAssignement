@@ -4,7 +4,7 @@ class SharedPreferenceHelper {
   static String userIdKey = "USERKEY";
   static String userNameKey = "USERNAMEKEY";
   static String userEmailKey = "USEREMAILKEY";
-  static String userCategoriesKey = "USERCATEGORIESKEY"; // Key mới cho Category
+  static String userCategoriesKey = "USERCATEGORIESKEY";
 
   Future<bool> saveUserId(String getUserId) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -21,7 +21,6 @@ class SharedPreferenceHelper {
     return prefs.setString(userEmailKey, getUserEmail);
   }
 
-  // --- HÀM MỚI CHO CATEGORY ---
   Future<bool> saveUserCategories(List<String> categories) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? userId = prefs.getString(userIdKey) ?? "unknown";
@@ -33,9 +32,7 @@ class SharedPreferenceHelper {
     String? userId = prefs.getString(userIdKey) ?? "unknown";
     return prefs.getStringList("${userId}_$userCategoriesKey");
   }
-  // -----------------------------
 
-  // --- HÀM CHO NHÃN (LABEL) ---
   static String userLabelsKey = "USERLABELSKEY";
 
   Future<bool> saveUserLabels(List<String> labels) async {
@@ -49,7 +46,6 @@ class SharedPreferenceHelper {
     String? userId = prefs.getString(userIdKey) ?? "unknown";
     return prefs.getStringList("${userId}_$userLabelsKey");
   }
-  // -----------------------------
 
   Future<String?> getUserId() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -80,7 +76,21 @@ class SharedPreferenceHelper {
     String? userId = prefs.getString(userIdKey) ?? "unknown";
     return prefs.getString("${userId}_$budgetGroupsKey");
   }
-  // -----------------------------------------
+
+  // --- HÀM CHO TÊN NGÂN SÁCH ---
+  static String budgetNameKey = "BUDGETNAMEKEY";
+
+  Future<bool> saveBudgetName(String name) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userId = prefs.getString(userIdKey) ?? "unknown";
+    return prefs.setString("${userId}_$budgetNameKey", name);
+  }
+
+  Future<String?> getBudgetName() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userId = prefs.getString(userIdKey) ?? "unknown";
+    return prefs.getString("${userId}_$budgetNameKey");
+  }
 
   // --- HÀM CHO VÍ TIỀN ---
   static String walletsKey = "WALLETSKEY";
@@ -96,9 +106,23 @@ class SharedPreferenceHelper {
     String? userId = prefs.getString(userIdKey) ?? "unknown";
     return prefs.getString("${userId}_$walletsKey");
   }
-  // -------------------------
 
-  // Xóa session đăng nhập hiện tại (không xóa hết data local của máy)
+  // --- HÀM CHO AVATAR INDEX ---
+  static String avatarIndexKey = "AVATARINDEXKEY";
+
+  Future<bool> saveAvatarIndex(int index) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userId = prefs.getString(userIdKey) ?? "unknown";
+    return prefs.setInt("${userId}_$avatarIndexKey", index);
+  }
+
+  Future<int?> getAvatarIndex() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userId = prefs.getString(userIdKey) ?? "unknown";
+    return prefs.getInt("${userId}_$avatarIndexKey");
+  }
+
+  // Xóa session đăng nhập
   Future<bool> clearUserSession() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.remove(userIdKey);

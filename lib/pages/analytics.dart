@@ -82,7 +82,9 @@ class _AnalyticsState extends State<Analytics> {
         // Bỏ qua nếu giao dịch thuộc Ví theo dõi
         String wName = data["WalletName"] ?? "";
         if (trackingWalletNames.contains(wName)) continue;
-
+        // Bỏ qua giao dịch chuyển tiền — không hiện trong analytics
+        String txType = data["Type"] ?? "";
+        if (txType == "chuyen_tien" || txType == "chuyen_tien_nhan") continue;
         data["id"] = doc.id;
         temp.add(data);
 
