@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:prmproject/services/database.dart';
 import 'package:prmproject/services/shared_pref.dart';
-
+import 'package:prmproject/services/sync_service.dart';
 // Trang thêm giao dịch — Tiền ra / Tiền vào
 class AddTransaction extends StatefulWidget {
   const AddTransaction({super.key});
@@ -36,7 +36,7 @@ class _AddTransactionState extends State<AddTransaction> {
   @override
   void initState() {
     super.initState();
-    _loadData();
+    Future.microtask(() => _loadData()); // ← thêm Future.microtask
   }
 
   _loadData() async {
@@ -77,15 +77,15 @@ class _AddTransactionState extends State<AddTransaction> {
     spentByCategory = {};
     if (userId != null) {
       try {
-        var snapshot = await DatabaseMethdos().getTransactions(userId!);
-        for (var doc in snapshot.docs) {
-          Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        // ✅ Dùng cache thay vì gọi thẳng Firestore
+        List<Map<String, dynamic>> txList =
+        await DatabaseMethdos().getTransactionsCached(userId!);
+        for (var data in txList) {
           if (data["Type"] == "tien_ra") {
             String category = data["Category"] ?? "";
             double amt = double.tryParse(data["Amount"] ?? "0") ?? 0;
             if (category.isNotEmpty) {
-              spentByCategory[category] =
-                  (spentByCategory[category] ?? 0) + amt;
+              spentByCategory[category] = (spentByCategory[category] ?? 0) + amt;
             }
           }
         }
@@ -170,7 +170,7 @@ class _AddTransactionState extends State<AddTransaction> {
     };
 
     await DatabaseMethdos().addTransaction(transactionData, userId!);
-
+    await SharedPreferenceHelper().clearTransactionsCache();
     double amountChange = isTienRa ? -amountVal : amountVal;
     for (var w in wallets) {
       if (w["name"] == selectedWallet) {
@@ -179,7 +179,7 @@ class _AddTransactionState extends State<AddTransaction> {
       }
     }
     await SharedPreferenceHelper().saveWallets(jsonEncode(wallets));
-
+    if (userId != null) SyncService.pushToFirestore(userId!); // ← thêm
     return true;
   }
 
@@ -1120,11 +1120,50 @@ class _AddTransactionState extends State<AddTransaction> {
                     _actionButton(
                         Icons.backspace_outlined, Colors.black54, _onBackspace),
                   ]),
+                  // ✅ Mới — 2 nút: lưu & tiếp tục + lưu & thoát
                   Row(children: [
                     _numButton("4"),
                     _numButton("5"),
                     _numButton("6"),
-                    // Nút lưu
+                    // Nút lưu & TIẾP TỤC
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () async {
+                          bool ok = await _saveTransaction();
+                          if (ok && mounted) {
+                            // Reset form, ở lại trang
+                            setState(() {
+                              amount = "0";
+                              selectedCategory = null;
+                              selectedLabel = null;
+                              descController.clear();
+                              selectedDate = DateTime.now();
+                            });
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                backgroundColor: Colors.green,
+                                duration: Duration(seconds: 1),
+                                content: Text("Đã lưu! Nhập tiếp..."),
+                              ),
+                            );
+                          }
+                        },
+                        child: Container(
+                          margin: const EdgeInsets.all(3),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          decoration: BoxDecoration(
+                            color: isTienRa
+                                ? const Color(0xFFD4A843).withValues(alpha: 0.6)
+                                : const Color(0xFF4CAF50).withValues(alpha: 0.6),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Center(
+                            child: Icon(Icons.add, color: Colors.white, size: 22),
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Nút lưu & THOÁT
                     Expanded(
                       child: GestureDetector(
                         onTap: () async {
@@ -1133,8 +1172,7 @@ class _AddTransactionState extends State<AddTransaction> {
                         },
                         child: Container(
                           margin: const EdgeInsets.all(3),
-                          padding:
-                              const EdgeInsets.symmetric(vertical: 16),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
                           decoration: BoxDecoration(
                             color: isTienRa
                                 ? const Color(0xFFD4A843)

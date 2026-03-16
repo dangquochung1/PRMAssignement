@@ -1,11 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-
-// Đã đổi lại thành dạng import package để đồng nhất với các file khác của bạn
-import 'package:prmproject/pages/analytics.dart';
-import 'package:prmproject/pages/onboarding.dart';
 import 'package:prmproject/pages/signup.dart';
-import 'package:prmproject/pages/login.dart';
+
 
 void main() async {
   // Bắt buộc phải có dòng này trước khi khởi tạo Firebase
@@ -19,13 +15,15 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Precache ảnh nền ngay khi app khởi động
+    precacheImage(const AssetImage("images/signup.png"), context);
+
     return MaterialApp(
-      title: 'Expense Tracker', // Đã đổi tên app cho phù hợp với dự án
-      debugShowCheckedModeBanner: false, // Ẩn chữ "DEBUG" góc phải màn hình
+      title: 'Expense Tracker',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xff904c6e)), // Chỉnh seed color theo tone màu app của bạn
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xff904c6e)),
       ),
-      // Bắt đầu luồng từ trang Đăng ký
       home: const SignUp(),
     );
   }

@@ -5,7 +5,8 @@ import 'package:prmproject/pages/main_shell.dart';
 import 'package:prmproject/pages/signup.dart';
 import 'package:prmproject/services/shared_pref.dart';
 import 'package:prmproject/utils/validator.dart'; // Import validate
-
+import 'dart:async'; // Cho TimeoutException
+import 'package:prmproject/services/sync_service.dart';
 class Login extends StatefulWidget {
   const Login({super.key});
 
@@ -21,18 +22,17 @@ class _LoginState extends State<Login> {
   bool isLoading = false;
 
   userLogin() async {
-    // 1. Kiểm tra Validate
     String? emailError = AppValidator.validateEmail(mailcontroller.text);
     if (emailError != null) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(emailError)));
       return;
     }
     if (passwordcontroller.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Vui lòng nhập mật khẩu")));
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Vui lòng nhập mật khẩu")));
       return;
     }
 
-    // 2. Bắt đầu xử lý
     setState(() {
       isLoading = true;
       email = mailcontroller.text;
@@ -40,44 +40,65 @@ class _LoginState extends State<Login> {
     });
 
     try {
-      // Gọi Firebase để đăng nhập
-      await FirebaseAuth.instance.signInWithEmailAndPassword(email: email, password: password);
+      // Bước 1: Firebase Auth
+      await FirebaseAuth.instance
+          .signInWithEmailAndPassword(email: email, password: password)
+          .timeout(const Duration(seconds: 30));
 
-      // Đăng nhập thành công, tìm thông tin user trên Firestore để lưu SharedPreferences
-      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .where('Email', isEqualTo: email)
-          .get();
+      // Bước 2: Kiểm tra SharedPrefs trước — nếu đã có data thì KHÔNG cần gọi Firestore
+      String? savedUserId = await SharedPreferenceHelper().getUserId();
+      String? savedEmail = await SharedPreferenceHelper().getUserEmail();
 
-      if (querySnapshot.docs.isNotEmpty) {
-        String id = querySnapshot.docs[0]["Id"];
-        String name = querySnapshot.docs[0]["Name"];
+      if (savedUserId == null || savedEmail != email) {
+        // Lần đầu login hoặc đổi tài khoản → mới cần query Firestore
+        QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+            .collection('users')
+            .where('Email', isEqualTo: email)
+            .get()
+            .timeout(const Duration(seconds: 30));
 
-        await SharedPreferenceHelper().saveUserId(id);
-        await SharedPreferenceHelper().saveUserName(name);
-        await SharedPreferenceHelper().saveUserEmail(email);
+        if (querySnapshot.docs.isNotEmpty) {
+          String id = querySnapshot.docs[0]["Id"];
+          String name = querySnapshot.docs[0]["Name"];
+          await SharedPreferenceHelper().saveUserId(id);
+          await SharedPreferenceHelper().saveUserName(name);
+          await SharedPreferenceHelper().saveUserEmail(email);
+          await SyncService.pullFromFirestore(id); // ← thêm dòng này
+        }
       }
+      // Nếu đã có data trong SharedPrefs → dùng luôn, không cần Firestore
 
       if (!mounted) return;
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const MainShell()));
+      Navigator.pushReplacement(
+          context, MaterialPageRoute(builder: (context) => const MainShell()));
 
     } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
       if (e.code == 'user-not-found') {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            backgroundColor: Colors.redAccent, content: Text("Không tìm thấy tài khoản với Email này.")));
+            backgroundColor: Colors.redAccent,
+            content: Text("Không tìm thấy tài khoản với Email này.")));
       } else if (e.code == 'wrong-password' || e.code == 'invalid-credential') {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            backgroundColor: Colors.redAccent, content: Text("Sai thông tin đăng nhập.")));
+            backgroundColor: Colors.redAccent,
+            content: Text("Sai thông tin đăng nhập.")));
       } else {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            backgroundColor: Colors.redAccent, content: Text(e.message ?? "Đăng nhập thất bại")));
+            backgroundColor: Colors.redAccent,
+            content: Text(e.message ?? "Đăng nhập thất bại")));
       }
+    } on TimeoutException catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          backgroundColor: Colors.orangeAccent,
+          content: Text("Kết nối quá chậm, vui lòng thử lại.")));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          backgroundColor: Colors.redAccent,
+          content: Text("Lỗi: $e")));
     } finally {
-      if (mounted) {
-        setState(() {
-          isLoading = false;
-        });
-      }
+      if (mounted) setState(() => isLoading = false);
     }
   }
 
@@ -157,10 +178,7 @@ class _LoginState extends State<Login> {
                         width: 80,
                         decoration: BoxDecoration(color: const Color(0xff904c6e), borderRadius: BorderRadius.circular(60)),
                         child: isLoading
-                            ? const Padding(
-                          padding: EdgeInsets.all(20.0),
-                          child: CircularProgressIndicator(color: Colors.white),
-                        )
+                            ? const Icon(Icons.hourglass_top, color: Colors.white, size: 35.0)
                             : const Icon(Icons.arrow_forward, color: Colors.white, size: 40.0),
                       ),
                     ),

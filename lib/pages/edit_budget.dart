@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:prmproject/services/shared_pref.dart';
-
+import 'package:prmproject/services/sync_service.dart';
 // Trang chỉnh sửa ngân sách — quản lý nhóm danh mục + danh mục
 class EditBudget extends StatefulWidget {
   const EditBudget({super.key});
@@ -47,6 +47,8 @@ class _EditBudgetState extends State<EditBudget> {
   _saveGroups() async {
     String jsonStr = jsonEncode(groups);
     await SharedPreferenceHelper().saveBudgetGroups(jsonStr);
+    String? userId = await SharedPreferenceHelper().getUserId();
+    if (userId != null) SyncService.pushToFirestore(userId); // ← thêm
   }
 
   // Format số tiền VND

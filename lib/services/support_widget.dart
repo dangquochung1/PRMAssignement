@@ -4,6 +4,4 @@ class AppWidget{
   static TextStyle healineTextStyle(double size){
       return TextStyle(color: Colors.black, fontSize: size, fontWeight: FontWeight.bold);
   }
-
-
 }

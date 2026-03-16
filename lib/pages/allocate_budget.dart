@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:prmproject/services/shared_pref.dart';
-
+import 'package:prmproject/services/sync_service.dart';
 // Trang phân bổ ngân sách — chỉnh sửa số tiền phân bổ cho từng danh mục
 class AllocateBudget extends StatefulWidget {
   final double tongTaiSan; // Tổng tài sản từ ví
@@ -87,6 +87,8 @@ class _AllocateBudgetState extends State<AllocateBudget> {
   _saveGroups() async {
     String jsonStr = jsonEncode(groups);
     await SharedPreferenceHelper().saveBudgetGroups(jsonStr);
+    String? userId = await SharedPreferenceHelper().getUserId();
+    if (userId != null) SyncService.pushToFirestore(userId); // ← thêm
   }
 
   @override

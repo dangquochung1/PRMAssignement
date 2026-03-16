@@ -19,22 +19,26 @@ class _MainShellState extends State<MainShell> {
   int _currentIndex = 0;
 
   // Danh sách các trang (index 2 = placeholder vì nút + sẽ push sang Expense)
-  final List<Widget> _pages = const [
-    Budget(),    // 0 — Ngân sách
-    Wallet(),    // 1 — Ví tiền
-    SizedBox(),  // 2 — Placeholder cho nút +
-    Analytics(), // 3 — Phân tích (dashboard hiện tại)
-    Profile(),   // 4 — Cài đặt
+  List<Widget> _pages = [
+    const Budget(),
+    const Wallet(),
+    const SizedBox(),
+    const Analytics(),
+    const Profile(),
   ];
 
-  void _onTabTapped(int index) {
+  void _onTabTapped(int index) async {
     // Nếu bấm nút + (index 2), push sang trang Expense rồi quay lại
     if (index == 2) {
-      Navigator.push(
+      await Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const AddTransaction()),
       );
-      return; // Không đổi tab
+      // Sau khi đóng AddTransaction, force reload budget
+      setState(() {
+        _pages[0] = const Budget();  // rebuild lại Budget widget
+      });
+      return;
     }
     setState(() {
       _currentIndex = index;

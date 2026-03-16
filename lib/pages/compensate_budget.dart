@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:prmproject/services/database.dart';
 import 'package:prmproject/services/shared_pref.dart';
-
+import 'package:prmproject/services/sync_service.dart';
 // Trang bù đắp chi tiêu vượt mức
 // Hiển thị danh sách các nguồn được chọn để bù tiền (vuốt để xóa)
 class CompensateBudget extends StatefulWidget {
@@ -47,12 +47,13 @@ class _CompensateBudgetState extends State<CompensateBudget> {
     }
 
     String? userId = await SharedPreferenceHelper().getUserId();
+
     spentByCategory = {};
     if (userId != null) {
       try {
-        var snapshot = await DatabaseMethdos().getTransactions(userId);
-        for (var doc in snapshot.docs) {
-          Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        List<Map<String, dynamic>> txList =
+        await DatabaseMethdos().getTransactionsCached(userId);
+        for (var data in txList) {
           if (data["Type"] == "tien_ra") {
             String cat = data["Category"] ?? "";
             double amt = double.tryParse(data["Amount"] ?? "0") ?? 0;
@@ -290,6 +291,8 @@ class _CompensateBudgetState extends State<CompensateBudget> {
     // 3. Save to SharedPreferences
     String jsonStr = jsonEncode(groups);
     await SharedPreferenceHelper().saveBudgetGroups(jsonStr);
+    String? userId = await SharedPreferenceHelper().getUserId(); // ← thêm
+    if (userId != null) SyncService.pushToFirestore(userId);    // ← thêm
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

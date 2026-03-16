@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:prmproject/services/database.dart';
 import 'package:prmproject/services/shared_pref.dart';
 
@@ -52,14 +51,13 @@ class _AnalyticsState extends State<Analytics> {
   @override
   void initState() {
     super.initState();
-    _fetchTransactions();
+    Future.microtask(() => _fetchTransactions());
   }
 
   Future<void> _fetchTransactions() async {
     String? userId = await SharedPreferenceHelper().getUserId();
     if (userId == null) return;
     try {
-      // 1. Đọc danh sách ví để lấy các thẻ Ví theo dõi
       List<String> trackingWalletNames = [];
       String? walletJson = await SharedPreferenceHelper().getWallets();
       if (walletJson != null && walletJson.isNotEmpty) {
@@ -71,28 +69,27 @@ class _AnalyticsState extends State<Analytics> {
         }
       }
 
-      QuerySnapshot snapshot = await DatabaseMethdos().getTransactions(userId);
+      // ✅ Dùng cache thay vì gọi thẳng Firestore
+      List<Map<String, dynamic>> allDocs =
+      await DatabaseMethdos().getTransactionsCached(userId);
+
       List<Map<String, dynamic>> temp = [];
       Set<String> eCategories = {};
       Set<String> iWallets = {};
 
-      for (var doc in snapshot.docs) {
-        var data = doc.data() as Map<String, dynamic>;
-        
-        // Bỏ qua nếu giao dịch thuộc Ví theo dõi
+      for (var data in allDocs) {
         String wName = data["WalletName"] ?? "";
         if (trackingWalletNames.contains(wName)) continue;
-        // Bỏ qua giao dịch chuyển tiền — không hiện trong analytics
         String txType = data["Type"] ?? "";
         if (txType == "chuyen_tien" || txType == "chuyen_tien_nhan") continue;
-        data["id"] = doc.id;
+
         temp.add(data);
 
         String type = data["Type"] ?? "";
         if (type == "tien_ra") {
-          String cat = (data["Category"] != null && data["Category"].toString().isNotEmpty) 
-            ? data["Category"] 
-            : (data["Label"] ?? "Không rõ");
+          String cat = (data["Category"] != null && data["Category"].toString().isNotEmpty)
+              ? data["Category"]
+              : (data["Label"] ?? "Không rõ");
           eCategories.add(cat);
         } else if (type == "tien_vao") {
           String wallet = data["WalletName"] ?? "Không rõ";
@@ -105,7 +102,7 @@ class _AnalyticsState extends State<Analytics> {
           allTransactions = temp;
           expenseCategories = eCategories.toList();
           incomeWallets = iWallets.toList();
-          
+
           if (selectedExpenseCategories.isEmpty) selectedExpenseCategories = List.from(expenseCategories);
           if (selectedIncomeWallets.isEmpty) selectedIncomeWallets = List.from(incomeWallets);
 
@@ -115,7 +112,7 @@ class _AnalyticsState extends State<Analytics> {
           if (incomeWallets.isNotEmpty && selectedAnalysisWallet == null) {
             selectedAnalysisWallet = incomeWallets.first;
           }
-          
+
           isLoading = false;
         });
       }

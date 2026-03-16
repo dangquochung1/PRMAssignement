@@ -38,7 +38,7 @@ class _TransactionDetailState extends State<TransactionDetail> {
 
     // 1. Xóa trên Firestore
     await DatabaseMethdos().deleteTransaction(userId, txId);
-
+    await SharedPreferenceHelper().clearTransactionsCache(); // ← thêm dòng này
     // 2. Chỉnh lại số dư ví (Hoàn trả)
     // Nếu tiền ra -> Xóa đi nghĩa là được cộng lại tiền
     // Nếu tiền vào -> Xóa đi nghĩa là bị trừ tiền

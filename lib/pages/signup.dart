@@ -50,7 +50,7 @@ class _SignUpState extends State<SignUp> {
 
     try {
       // Gọi Firebase Auth (nếu email trùng nó sẽ tự bắn lỗi e.code == 'email-already-in-use')
-      UserCredential userCredential = await FirebaseAuth.instance
+      await FirebaseAuth.instance
           .createUserWithEmailAndPassword(email: email, password: password);
 
       String id = randomAlphaNumeric(10);
@@ -99,7 +99,10 @@ class _SignUpState extends State<SignUp> {
     return Container(
       decoration: const BoxDecoration(
         image: DecorationImage(
-          image: AssetImage("images/signup.png"),
+          image: ResizeImage(
+            AssetImage("images/signup.png"),
+            width: 1080, // giới hạn resolution
+          ),
           fit: BoxFit.cover,
         ),
       ),

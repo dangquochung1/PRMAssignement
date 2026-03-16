@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:prmproject/pages/logout.dart';
 import 'package:prmproject/pages/delete_account.dart';
 import 'package:prmproject/services/shared_pref.dart';
-
+import 'package:prmproject/services/sync_service.dart';
 class Profile extends StatefulWidget {
   const Profile({super.key});
 
@@ -99,6 +99,8 @@ class _ProfileState extends State<Profile> {
               String newName = ctrl.text.trim();
               if (newName.isNotEmpty) {
                 await SharedPreferenceHelper().saveUserName(newName);
+                String? uid = await SharedPreferenceHelper().getUserId();
+                if (uid != null) SyncService.pushToFirestore(uid); // ← thêm
                 setState(() => name = newName);
               }
               if (mounted) Navigator.pop(ctx);
@@ -151,6 +153,8 @@ class _ProfileState extends State<Profile> {
                     return GestureDetector(
                       onTap: () async {
                         await SharedPreferenceHelper().saveAvatarIndex(i);
+                        String? uid = await SharedPreferenceHelper().getUserId();
+                        if (uid != null) SyncService.pushToFirestore(uid); // ← thêm
                         setState(() => avatarIndex = i);
                         setSheet(() {});
                         Navigator.pop(ctx);
@@ -246,8 +250,9 @@ class _ProfileState extends State<Profile> {
                     for (var ww in wallets) {
                       ww["isDefault"] = (ww["name"] == w["name"]);
                     }
-                    await SharedPreferenceHelper()
-                        .saveWallets(jsonEncode(wallets));
+                    await SharedPreferenceHelper().saveWallets(jsonEncode(wallets));
+                    String? uid = await SharedPreferenceHelper().getUserId();
+                    if (uid != null) SyncService.pushToFirestore(uid); // ← thêm
                     setState(() => defaultWalletName = w["name"]);
                     if (mounted) Navigator.pop(ctx);
                     if (mounted) {

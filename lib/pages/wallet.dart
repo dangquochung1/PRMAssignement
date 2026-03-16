@@ -6,6 +6,7 @@ import 'package:prmproject/pages/transfer_wallet.dart';
 import 'package:prmproject/services/database.dart';
 import 'package:prmproject/services/shared_pref.dart';
 import 'package:prmproject/pages/full_history.dart';
+import 'package:prmproject/services/sync_service.dart';
 // Trang Ví tiền
 class Wallet extends StatefulWidget {
   const Wallet({super.key});
@@ -42,12 +43,8 @@ class _WalletState extends State<Wallet> {
 
     if (userId != null) {
       try {
-        var snapshot = await DatabaseMethdos().getTransactions(userId!);
-        transactions = snapshot.docs.map((doc) {
-          Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-          data["id"] = doc.id;
-          return data;
-        }).toList();
+        // ✅ Dùng cache thay vì gọi thẳng Firestore
+        transactions = await DatabaseMethdos().getTransactionsCached(userId!);
       } catch (e) {
         transactions = [];
       }
@@ -58,6 +55,7 @@ class _WalletState extends State<Wallet> {
 
   _saveWallets() async {
     await SharedPreferenceHelper().saveWallets(jsonEncode(wallets));
+    if (userId != null) SyncService.pushToFirestore(userId!); // ← thêm
   }
 
   String formatVND(double amount) {
@@ -515,7 +513,7 @@ class _WalletState extends State<Wallet> {
 
                       await SharedPreferenceHelper()
                           .saveWallets(jsonEncode(wallets));
-
+                      if (userId != null) SyncService.pushToFirestore(userId!); // ← thêm
                       if (mounted) {
                         Navigator.pop(ctx);
                         _loadData();
@@ -998,7 +996,6 @@ class _WalletState extends State<Wallet> {
 
     if (txType == "chuyen_tien") {
       displayName = "Chuyển tiền";
-      String transferTo = tx["TransferTo"] ?? "";
       displayIcon = Icons.swap_horiz;
       displayColor = Colors.blue.shade600;
       isPositive = false;

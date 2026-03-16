@@ -44,6 +44,7 @@ dependencies:
   intl: ^0.20.2
   image_picker: ^1.2.1
 
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -54,7 +55,24 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.1
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "images/app_icon.png"           # icon thường (fallback)
+  adaptive_icon_background: "#F5E6C8"         # màu nền (lấy màu nền ảnh gà ~kem vàng)
+  adaptive_icon_foreground: "images/app_icon.png"  # ảnh foreground tràn đầy
+  min_sdk_android: 21
 
+flutter_native_splash:
+  color: "#ffffff"
+  image: images/splash.png
+  android: true
+  ios: false
+  android_12:
+    image: images/splash.png
+    color: "#ffffff"
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 

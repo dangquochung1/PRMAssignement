@@ -32,26 +32,22 @@ class _BudgetState extends State<Budget> {
   @override
   void initState() {
     super.initState();
-    _loadData();
+    Future.microtask(() => _loadData()); // ← thêm Future.microtask
   }
 
   _loadData() async {
     userId = await SharedPreferenceHelper().getUserId();
 
-    // Load tên ngân sách
     String? savedName = await SharedPreferenceHelper().getBudgetName();
-    if (savedName != null && savedName.isNotEmpty) {
-      budgetName = savedName;
-    }
 
-    // Load groups
+    if (savedName != null && savedName.isNotEmpty) budgetName = savedName;
+
     String? jsonStr = await SharedPreferenceHelper().getBudgetGroups();
     if (jsonStr != null && jsonStr.isNotEmpty) {
       List<dynamic> decoded = jsonDecode(jsonStr);
       groups = decoded.map((e) => Map<String, dynamic>.from(e)).toList();
     }
 
-    // Load wallets → tính tổng tài sản (bỏ qua ví theo dõi)
     String? walletJson = await SharedPreferenceHelper().getWallets();
     tongTaiSan = 0;
     if (walletJson != null && walletJson.isNotEmpty) {
@@ -63,33 +59,28 @@ class _BudgetState extends State<Budget> {
       }
     }
 
-    // Load giao dịch → tính đã tiêu theo danh mục (chỉ tháng đang xem)
     spentByCategory = {};
     availableMonths = {};
     String filterMonth = DateFormat("MM-yyyy").format(selectedBudgetDate);
 
     if (userId != null) {
       try {
-        var snapshot = await DatabaseMethdos().getTransactions(userId!);
-        for (var doc in snapshot.docs) {
-          Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        // ✅ Dùng cache thay vì gọi thẳng Firestore
+        List<Map<String, dynamic>> txList =
+        await DatabaseMethdos().getTransactionsCached(userId!);
 
-          // Thu thập tháng có data (bất kể loại giao dịch)
+        for (var data in txList) {
           String txDate = data["Date"] ?? "";
           if (txDate.length >= 7) {
-            // Date format: "dd-MM-yyyy", lấy "MM-yyyy"
             String mmyyyy = txDate.substring(txDate.length - 7);
             availableMonths.add(mmyyyy);
           }
-
-          // Chỉ tính chi tiêu tháng đang xem
           String txType = data["Type"] ?? "";
           if (txType == "tien_ra" && txDate.endsWith(filterMonth)) {
             String category = data["Category"] ?? "";
             double amount = double.tryParse(data["Amount"] ?? "0") ?? 0;
             if (category.isNotEmpty) {
-              spentByCategory[category] =
-                  (spentByCategory[category] ?? 0) + amount;
+              spentByCategory[category] = (spentByCategory[category] ?? 0) + amount;
             }
           }
         }
@@ -130,10 +121,22 @@ class _BudgetState extends State<Budget> {
       for (var cat in cats) {
         double allocated = (cat["allocated"] ?? 0).toDouble();
         double spent = spentByCategory[cat["name"]] ?? 0;
-        if (spent > allocated) {
+        String catType = cat["type"] ?? "chi_tieu";
+
+        bool isOver = false;
+        if (catType == "tiet_kiem") {
+          // Tiết kiệm: cảnh báo khi rút tiền (spent) vượt quá đã tích lũy (allocated)
+          isOver = spent > allocated;
+        } else {
+          // Chi tiêu: cảnh báo khi chi vượt phân bổ
+          isOver = spent > allocated;
+        }
+
+        if (isOver && allocated > 0) {  // ← thêm điều kiện allocated > 0
           result.add({
             "name": cat["name"],
             "overAmount": spent - allocated,
+            "type": catType,  // ← thêm type để phân biệt khi hiển thị
           });
         }
       }

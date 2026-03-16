@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:prmproject/services/shared_pref.dart';
-
+import 'package:prmproject/services/sync_service.dart';
 class CategoryManager extends StatefulWidget {
   const CategoryManager({super.key});
 
@@ -31,6 +31,8 @@ class _CategoryManagerState extends State<CategoryManager> {
 
   _saveCategories() async {
     await SharedPreferenceHelper().saveUserCategories(categories);
+    String? userId = await SharedPreferenceHelper().getUserId();
+    if (userId != null) SyncService.pushToFirestore(userId); // ← thêm
     setState(() {});
   }
 

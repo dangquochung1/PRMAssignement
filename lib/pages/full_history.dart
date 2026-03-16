@@ -26,7 +26,7 @@ class _FullHistoryState extends State<FullHistory> {
   @override
   void initState() {
     super.initState();
-    _loadData();
+    Future.microtask(() => _loadData()); // ← thêm Future.microtask
   }
 
   @override
@@ -44,12 +44,8 @@ class _FullHistoryState extends State<FullHistory> {
     }
     if (userId != null) {
       try {
-        var snapshot = await DatabaseMethdos().getTransactions(userId!);
-        allTransactions = snapshot.docs.map((doc) {
-          Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-          data["id"] = doc.id;
-          return data;
-        }).toList();
+        // ✅ Dùng cache thay vì gọi thẳng Firestore
+        allTransactions = await DatabaseMethdos().getTransactionsCached(userId!);
       } catch (_) {
         allTransactions = [];
       }

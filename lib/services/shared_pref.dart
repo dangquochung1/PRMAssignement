@@ -130,4 +130,25 @@ class SharedPreferenceHelper {
     await prefs.remove(userEmailKey);
     return true;
   }
+  // --- CACHE GIAO DỊCH ---
+  static String transactionsCacheKey = "TRANSACTIONS_CACHE";
+
+  Future<bool> saveTransactionsCache(String jsonStr) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userId = prefs.getString(userIdKey) ?? "unknown";
+    return prefs.setString("${userId}_$transactionsCacheKey", jsonStr);
+  }
+
+  Future<String?> getTransactionsCache() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userId = prefs.getString(userIdKey) ?? "unknown";
+    return prefs.getString("${userId}_$transactionsCacheKey");
+  }
+
+  Future<bool> clearTransactionsCache() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userId = prefs.getString(userIdKey) ?? "unknown";
+    await prefs.remove("${userId}_$transactionsCacheKey");
+    return true;
+  }
 }
