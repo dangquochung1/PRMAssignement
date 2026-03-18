@@ -86,4 +86,20 @@ class DatabaseMethdos {
 
     return result;
   }
+
+  /// Đổi tên danh mục trên mọi giao dịch (khi user sửa tên danh mục ngân sách).
+  Future<void> renameTransactionCategory(
+      String userId, String oldName, String newName) async {
+    if (oldName.isEmpty || oldName == newName) return;
+    final qs = await FirebaseFirestore.instance
+        .collection("users")
+        .doc(userId)
+        .collection("Transactions")
+        .where("Category", isEqualTo: oldName)
+        .get();
+    for (var doc in qs.docs) {
+      await doc.reference.update({"Category": newName});
+    }
+    await SharedPreferenceHelper().clearTransactionsCache();
+  }
 }

@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:prmproject/pages/allocate_budget.dart';
 import 'package:prmproject/pages/compensate_budget.dart';
 import 'package:prmproject/pages/edit_budget.dart';
+import 'package:prmproject/pages/budget_category_detail.dart';
 import 'package:prmproject/services/database.dart';
 import 'package:prmproject/services/shared_pref.dart';
 
@@ -128,11 +129,14 @@ class _BudgetState extends State<Budget> {
           // Tiết kiệm: cảnh báo khi rút tiền (spent) vượt quá đã tích lũy (allocated)
           isOver = spent > allocated;
         } else {
-          // Chi tiêu: cảnh báo khi chi vượt phân bổ
+          // Chi tiêu: cảnh báo khi chi vượt phân bổ (kể cả chưa phân bổ = 0 mà đã chi)
           isOver = spent > allocated;
         }
 
-        if (isOver && allocated > 0) {  // ← thêm điều kiện allocated > 0
+        // Chi tiêu: luôn cảnh báo khi vượt. Tiết kiệm: chỉ khi đã có phân bổ > 0 (tránh nhiễu)
+        final bool shouldWarn =
+            isOver && (catType == "chi_tieu" || allocated > 0);
+        if (shouldWarn) {
           result.add({
             "name": cat["name"],
             "overAmount": spent - allocated,
@@ -728,7 +732,9 @@ class _BudgetState extends State<Budget> {
                 ),
 
               // ---- DANH SÁCH NHÓM DANH MỤC ----
-              ...groups.map((group) {
+              ...groups.asMap().entries.map((ge) {
+                final group = ge.value;
+                final int gIdx = ge.key;
                 double groupTotal = _groupTotal(group);
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -763,7 +769,11 @@ class _BudgetState extends State<Budget> {
                       child: Column(
                         children: [
                           ...(group["categories"] as List? ?? [])
-                              .map((cat) {
+                              .asMap()
+                              .entries
+                              .map((ce) {
+                            final cat = ce.value;
+                            final int cIdx = ce.key;
                             IconData catIcon = IconData(
                                 cat["icon"] ?? 0xe318,
                                 fontFamily: 'MaterialIcons');
@@ -778,15 +788,16 @@ class _BudgetState extends State<Budget> {
                             double savingsGoal =
                                 (cat["savingsGoal"] ?? 0).toDouble();
 
+                            Widget card;
                             if (catType == "tiet_kiem") {
-                              return _buildSavingsCard(
+                              card = _buildSavingsCard(
                                 icon: catIcon,
                                 name: cat["name"],
                                 allocated: allocated,
                                 savingsGoal: savingsGoal,
                               );
                             } else {
-                              return _buildSpendingCard(
+                              card = _buildSpendingCard(
                                 icon: catIcon,
                                 name: cat["name"],
                                 allocated: allocated,
@@ -795,6 +806,27 @@ class _BudgetState extends State<Budget> {
                                 isOverBudget: isOverBudget,
                               );
                             }
+                            return Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(14),
+                                onTap: () async {
+                                  await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          BudgetCategoryDetail(
+                                        groupIndex: gIdx,
+                                        categoryIndex: cIdx,
+                                        budgetMonth: selectedBudgetDate,
+                                      ),
+                                    ),
+                                  );
+                                  _loadData();
+                                },
+                                child: card,
+                              ),
+                            );
                           }),
                           const SizedBox(height: 16),
                         ],
