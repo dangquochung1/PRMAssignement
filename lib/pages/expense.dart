@@ -187,47 +187,107 @@ class _ExpenseState extends State<Expense> {
                   ],
                 ),
               ),
-              const SizedBox(height: 60.0),
+              const SizedBox(height: 40.0),
 
-              // SUBMIT BUTTON
-              GestureDetector(
-                onTap: () async {
-                  if (amountcontroller.text.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                        backgroundColor: Colors.red, content: Text("Vui lòng nhập Amount")));
-                    return;
-                  }
+              // HÀNG 2 NÚT: Lưu & tiếp tục / Lưu & đóng
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                child: Row(
+                  children: [
+                    // LƯU & TIẾP TỤC: thêm giao dịch, giữ nguyên màn hình
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () async {
+                          if (amountcontroller.text.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                                backgroundColor: Colors.red,
+                                content: Text("Vui lòng nhập Amount")));
+                            return;
+                          }
 
-                  Map<String, dynamic> addExpense = {
-                    "Amount": amountcontroller.text,
-                    "Category": value,
-                    "Date": formattedDate,
-                  };
+                          Map<String, dynamic> addExpense = {
+                            "Amount": amountcontroller.text,
+                            "Category": value,
+                            "Date": formattedDate,
+                          };
 
-                  if (Id == null) return;
+                          if (Id == null) return;
 
-                  await DatabaseMethdos().addUserExpense(addExpense, Id!);
-                  setState(() {
-                    amountcontroller.clear();
-                  });
-                  if(!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                    backgroundColor: Colors.green,
-                    content: Text("Expense added successfully", style: TextStyle(fontSize: 20.0)),
-                  ));
-                },
-                child: Center(
-                  child: Container(
-                    height: 50,
-                    width: 200,
-                    decoration: BoxDecoration(
-                      color: const Color(0xffee6856),
-                      borderRadius: BorderRadius.circular(10),
+                          await DatabaseMethdos().addUserExpense(addExpense, Id!);
+                          setState(() {
+                            amountcontroller.clear();
+                          });
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                            backgroundColor: Colors.green,
+                            content: Text("Đã lưu, tiếp tục nhập khoản chi tiếp theo"),
+                          ));
+                        },
+                        child: Container(
+                          height: 50,
+                          decoration: BoxDecoration(
+                            color: Colors.blue.shade400,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Center(
+                            child: Text(
+                              "Lưu & tiếp tục",
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16.0,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
-                    child: const Center(
-                      child: Text("Submit", style: TextStyle(color: Colors.white, fontSize: 18.0, fontWeight: FontWeight.bold)),
+                    const SizedBox(width: 12),
+                    // LƯU & ĐÓNG: thêm giao dịch rồi thoát màn hình
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () async {
+                          if (amountcontroller.text.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                                backgroundColor: Colors.red,
+                                content: Text("Vui lòng nhập Amount")));
+                            return;
+                          }
+
+                          Map<String, dynamic> addExpense = {
+                            "Amount": amountcontroller.text,
+                            "Category": value,
+                            "Date": formattedDate,
+                          };
+
+                          if (Id == null) return;
+
+                          await DatabaseMethdos().addUserExpense(addExpense, Id!);
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                            backgroundColor: Colors.green,
+                            content: Text("Đã lưu khoản chi"),
+                          ));
+                          Navigator.pop(context);
+                        },
+                        child: Container(
+                          height: 50,
+                          decoration: BoxDecoration(
+                            color: const Color(0xff4CAF50),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Center(
+                            child: Text(
+                              "Lưu & đóng",
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16.0,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ),
             ],

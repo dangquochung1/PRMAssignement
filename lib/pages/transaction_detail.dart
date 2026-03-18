@@ -33,8 +33,23 @@ class _TransactionDetailState extends State<TransactionDetail> {
 
     String txId = widget.transaction["id"];
     String type = widget.transaction["Type"] ?? "";
+    String subType = widget.transaction["SubType"] ?? "";
+    String labelField = widget.transaction["Label"] ?? "";
     String walletName = widget.transaction["WalletName"] ?? "";
     double amount = double.tryParse(widget.transaction["Amount"] ?? "0") ?? 0;
+
+    // Không cho phép xóa giao dịch thuộc loại khớp số dư
+    if (subType == "khop_so_du" || labelField == "khop_so_du") {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            backgroundColor: Colors.orange,
+            content: Text("Giao dịch điều chỉnh số dư không thể xóa."),
+          ),
+        );
+      }
+      return;
+    }
 
     // 1. Xóa trên Firestore
     await DatabaseMethdos().deleteTransaction(userId, txId);
@@ -71,6 +86,9 @@ class _TransactionDetailState extends State<TransactionDetail> {
   @override
   Widget build(BuildContext context) {
     bool isTienRa = widget.transaction["Type"] == "tien_ra";
+    String subType = widget.transaction["SubType"] ?? "";
+    String labelField = widget.transaction["Label"] ?? "";
+    bool isKhopSoDu = subType == "khop_so_du" || labelField == "khop_so_du";
     double amount = double.tryParse(widget.transaction["Amount"] ?? "0") ?? 0;
     String displayAmount = isTienRa ? "-${formatVND(amount)}" : "+${formatVND(amount)}";
     String category = (widget.transaction["Category"] != null && widget.transaction["Category"].toString().isNotEmpty) 
@@ -218,29 +236,30 @@ class _TransactionDetailState extends State<TransactionDetail> {
 
             const SizedBox(height: 40),
 
-            // Nút xóa
-            GestureDetector(
-              onTap: () {
-                showDialog(
-                  context: context,
-                  builder: (ctx) => AlertDialog(
-                    title: const Text("Xóa giao dịch?"),
-                    content: const Text("Giao dịch này sẽ bị xóa vĩnh viễn và số dư ví sẽ được hoàn trả lại. Bạn có chắc chắn không?"),
-                    actions: [
-                      TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("HỦY", style: TextStyle(color: Colors.grey))),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.pop(ctx);
-                          _deleteTransaction();
-                        },
-                        child: const Text("XÓA", style: TextStyle(color: Colors.red)),
-                      ),
-                    ],
-                  ),
-                );
-              },
-              child: const Text("XÓA GIAO DỊCH", style: TextStyle(color: Colors.redAccent, fontSize: 16, fontWeight: FontWeight.bold)),
-            ),
+            // Nút xóa (ẩn với giao dịch khớp số dư)
+            if (!isKhopSoDu)
+              GestureDetector(
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text("Xóa giao dịch?"),
+                      content: const Text("Giao dịch này sẽ bị xóa vĩnh viễn và số dư ví sẽ được hoàn trả lại. Bạn có chắc chắn không?"),
+                      actions: [
+                        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("HỦY", style: TextStyle(color: Colors.grey))),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            _deleteTransaction();
+                          },
+                          child: const Text("XÓA", style: TextStyle(color: Colors.red)),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+                child: const Text("XÓA GIAO DỊCH", style: TextStyle(color: Colors.redAccent, fontSize: 16, fontWeight: FontWeight.bold)),
+              ),
           ],
         ),
       ),

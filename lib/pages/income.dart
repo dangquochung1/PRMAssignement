@@ -173,52 +173,108 @@ class _IncomeState extends State<Income> {
                   ],
                 ),
               ),
-              const SizedBox(height: 60.0),
+              const SizedBox(height: 40.0),
 
-              // --- NÚT SUBMIT ---
-              GestureDetector(
-                onTap: () async {
-                  if (sourcecontroller.text.isEmpty || amountcontroller.text.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                        backgroundColor: Colors.red,
-                        content: Text("Vui lòng nhập đủ thông tin!")));
-                    return;
-                  }
+              // --- HÀNG 2 NÚT: Lưu & tiếp tục / Lưu & đóng ---
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                child: Row(
+                  children: [
+                    // LƯU & TIẾP TỤC: thêm khoản thu, ở lại màn hình
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () async {
+                          if (sourcecontroller.text.isEmpty || amountcontroller.text.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                                backgroundColor: Colors.red,
+                                content: Text("Vui lòng nhập đủ thông tin!")));
+                            return;
+                          }
 
-                  Map<String, dynamic> addIncome = {
-                    "Source": sourcecontroller.text, // Data mới
-                    "Amount": amountcontroller.text,
-                    "Date": formattedDate,
-                  };
+                          Map<String, dynamic> addIncome = {
+                            "Source": sourcecontroller.text,
+                            "Amount": amountcontroller.text,
+                            "Date": formattedDate,
+                          };
 
-                  if (Id == null) return;
+                          if (Id == null) return;
 
-                  await DatabaseMethdos().addUserIncome(addIncome, Id!);
-                  setState(() {
-                    amountcontroller.clear();
-                    sourcecontroller.clear();
-                  });
-                  if(!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                    backgroundColor: Colors.green,
-                    content: Text("Income added successfully", style: TextStyle(fontSize: 20.0)),
-                  ));
-                },
-                child: Center(
-                  child: Container(
-                    height: 50,
-                    width: 200,
-                    decoration: BoxDecoration(
-                      color: const Color(0xffee6856),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Center(
-                      child: Text(
-                        "Submit",
-                        style: TextStyle(color: Colors.white, fontSize: 20.0, fontWeight: FontWeight.bold),
+                          await DatabaseMethdos().addUserIncome(addIncome, Id!);
+                          setState(() {
+                            amountcontroller.clear();
+                            sourcecontroller.clear();
+                          });
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                            backgroundColor: Colors.green,
+                            content: Text("Đã lưu, tiếp tục nhập khoản thu tiếp theo"),
+                          ));
+                        },
+                        child: Container(
+                          height: 50,
+                          decoration: BoxDecoration(
+                            color: Colors.blue.shade400,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Center(
+                            child: Text(
+                              "Lưu & tiếp tục",
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16.0,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                    const SizedBox(width: 12),
+                    // LƯU & ĐÓNG: thêm khoản thu rồi thoát
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () async {
+                          if (sourcecontroller.text.isEmpty || amountcontroller.text.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                                backgroundColor: Colors.red,
+                                content: Text("Vui lòng nhập đủ thông tin!")));
+                            return;
+                          }
+
+                          Map<String, dynamic> addIncome = {
+                            "Source": sourcecontroller.text,
+                            "Amount": amountcontroller.text,
+                            "Date": formattedDate,
+                          };
+
+                          if (Id == null) return;
+
+                          await DatabaseMethdos().addUserIncome(addIncome, Id!);
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                            backgroundColor: Colors.green,
+                            content: Text("Đã lưu khoản thu"),
+                          ));
+                          Navigator.pop(context);
+                        },
+                        child: Container(
+                          height: 50,
+                          decoration: BoxDecoration(
+                            color: const Color(0xff4CAF50),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Center(
+                            child: Text(
+                              "Lưu & đóng",
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16.0,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],

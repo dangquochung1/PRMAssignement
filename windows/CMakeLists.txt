@@ -1,5 +1,6 @@
 # Project-level configuration.
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.10)
+set(CMAKE_POLICY_VERSION_MINIMUM "3.5" CACHE STRING "" FORCE) # Thêm dòng này
 project(prmproject LANGUAGES CXX)
 
 # The name of the executable created for the application. Change this to change

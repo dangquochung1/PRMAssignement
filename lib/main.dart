@@ -1,12 +1,14 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:prmproject/pages/signup.dart';
-
+import 'firebase_options.dart';
 
 void main() async {
   // Bắt buộc phải có dòng này trước khi khởi tạo Firebase
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform, // DÙNG OPTIONS Ở ĐÂY
+  );
   runApp(const MyApp());
 }
 // aa

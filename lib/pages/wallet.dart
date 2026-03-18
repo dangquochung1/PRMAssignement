@@ -43,8 +43,9 @@ class _WalletState extends State<Wallet> {
 
     if (userId != null) {
       try {
-        // ✅ Dùng cache thay vì gọi thẳng Firestore
-        transactions = await DatabaseMethdos().getTransactionsCached(userId!);
+        // ✅ Luôn refresh để hiển thị giao dịch mới nhất (khớp số dư, chuyển tiền, ...)
+        transactions = await DatabaseMethdos()
+            .getTransactionsCached(userId!, forceRefresh: true);
       } catch (e) {
         transactions = [];
       }
@@ -397,7 +398,10 @@ class _WalletState extends State<Wallet> {
       backgroundColor: Colors.transparent,
       builder: (ctx) {
         return StatefulBuilder(builder: (ctx2, setSheet) {
+          final bottomInset = MediaQuery.of(ctx2).viewInsets.bottom;
           return Container(
+            // Chừa khoảng trống theo bàn phím để không che ô nhập liệu
+            margin: EdgeInsets.only(bottom: bottomInset),
             height: MediaQuery.of(ctx).size.height * 0.85,
             decoration: const BoxDecoration(
               color: Color(0xFFF5F5F0),
@@ -487,9 +491,17 @@ class _WalletState extends State<Wallet> {
                         String wName = w["name"];
                         double oldAmt =
                             (w["amount"] ?? 0).toDouble();
-                        double newAmt = double.tryParse(
-                                controllers[wName]?.text ?? "") ??
-                            oldAmt;
+
+                        // Nếu ô trống thì xem như nhập 0 để cho phép chỉnh về 0
+                        String rawText =
+                            controllers[wName]?.text.trim() ?? "";
+                        double newAmt;
+                        if (rawText.isEmpty) {
+                          newAmt = 0;
+                        } else {
+                          newAmt =
+                              double.tryParse(rawText) ?? oldAmt;
+                        }
                         double diff = newAmt - oldAmt;
 
                         if (diff.abs() > 0) {
