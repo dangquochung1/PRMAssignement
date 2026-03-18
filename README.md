@@ -69,7 +69,9 @@
 | Nhóm danh mục | Tổ chức danh mục chi tiêu theo nhóm (Nhà ở, Ăn uống, v.v.) |
 | Phân bổ ngân sách | Giao số tiền cụ thể cho từng danh mục |
 | Tiết kiệm | Theo dõi mục tiêu tiết kiệm với progress bar |
-| Bù đắp vượt mức | Tự động cảnh báo và hỗ trợ bù đắp khi vượt ngân sách |
+| Cảnh báo vượt mức | Cảnh báo khi chi tiêu vượt số tiền đã phân bổ (kể cả khi phân bổ = 0 nhưng đã phát sinh chi) |
+| Bù đắp vượt mức | Chọn nguồn để bù đắp (tiền chưa phân bổ hoặc danh mục khác), tự động điều chỉnh lại `allocated` |
+| Chi tiết danh mục | Màn hình chi tiết hiển thị tên + loại (Chi tiêu / Tiết kiệm), **số tiền đã phân bổ / đã tiêu / còn lại**, lịch sử giao dịch theo danh mục và cho phép **đổi tên danh mục** (đồng bộ sang giao dịch) |
 | Lọc theo tháng | Xem ngân sách theo tháng/năm, chỉ hiển thị tháng có data |
 | Tên ngân sách tùy chỉnh | Đổi tên ngân sách theo ý muốn |
 
@@ -103,10 +105,10 @@
                │
 ┌──────────────▼──────────────────────────────┐
 │              Services Layer                  │
-│  ┌────────────────┐  ┌─────────────────────┐│
-│  │  DatabaseMethods│  │SharedPreferenceHelper││
-│  │  (Firestore)   │  │  (Local cache)      ││
-│  └────────────────┘  └─────────────────────┘│
+│  ┌────────────────┐  ┌─────────────────────┐  ┌────────────────┐│
+│  │ DatabaseMethods │  │SharedPreferenceHelper│  │  SyncService  ││
+│  │ (Firestore)    │  │ (Local cache)       │  │  (Push/Pull)   ││
+│  └────────────────┘  └─────────────────────┘  └────────────────┘│
 └──────────────┬──────────────────────────────┘
                │
 ┌──────────────▼──────────────────────────────┐
@@ -127,6 +129,7 @@
 | Authentication | Firebase Auth | latest |
 | Database | Cloud Firestore | latest |
 | Local Storage | SharedPreferences | latest |
+| Sync & profile | Custom `SyncService` (Firestore document `users/{id}`) | latest |
 | Charts | fl_chart / custom | latest |
 | Date Format | intl | latest |
 | Platform | Android, iOS, Web | — |
@@ -136,6 +139,9 @@
 ```
 users/
   {userId}/
+    // Hồ sơ user (ví, ngân sách, avatar...) được lưu trên chính document này
+    // qua SyncService.pushToFirestore / pullFromFirestore
+
     Transactions/
       {txId}/
         Amount:      "150000"
@@ -149,6 +155,8 @@ users/
         TransferTo:  "Crypto"      (chỉ cho chuyen_tien)
         TransferFrom:"Tiền mặt"    (chỉ cho chuyen_tien_nhan)
 ```
+
+> Khi người dùng **đổi tên danh mục ngân sách**, app sẽ gọi `DatabaseMethods.renameTransactionCategory` để cập nhật lại trường `Category` cho toàn bộ giao dịch trùng tên cũ, giúp màn hình lịch sử và chi tiết danh mục luôn đồng nhất.
 
 ### Dữ liệu Local (SharedPreferences)
 
@@ -174,6 +182,7 @@ lib/
 │   ├── main_shell.dart          # Bottom navigation shell (5 tabs)
 │   │
 │   ├── budget.dart              # Tab Ngân sách — Zero-Based Budgeting
+│   ├── budget_category_detail.dart   # Chi tiết danh mục ngân sách + lịch sử + đổi tên
 │   ├── allocate_budget.dart     # Phân bổ ngân sách
 │   ├── edit_budget.dart         # Chỉnh sửa nhóm danh mục
 │   ├── compensate_budget.dart   # Bù đắp chi tiêu vượt mức
@@ -191,8 +200,9 @@ lib/
 │   └── delete_account.dart      # Xóa tài khoản
 │
 ├── services/
-│   ├── database.dart            # Firebase Firestore methods
-│   └── shared_pref.dart         # SharedPreferences helper
+│   ├── database.dart            # Firebase Firestore methods + rename Category
+│   ├── shared_pref.dart         # SharedPreferences helper
+│   └── sync_service.dart        # Đồng bộ ví + ngân sách + avatar, labels... với Firestore
 │
 └── utils/
     └── validator.dart           # Email & password validation
