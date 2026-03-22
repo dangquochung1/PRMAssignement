@@ -1,6 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:prmproject/pages/signup.dart';
+import 'package:prmproject/pages/login.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -18,7 +18,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Precache ảnh nền ngay khi app khởi động
-    precacheImage(const AssetImage("images/signup.png"), context);
+    precacheImage(const AssetImage("images/login.png"), context);
 
     return MaterialApp(
       title: 'Expense Tracker',
@@ -26,7 +26,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xff904c6e)),
       ),
-      home: const SignUp(),
+      home: const Login(),
     );
   }
 }
