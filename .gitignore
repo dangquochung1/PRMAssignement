@@ -44,8 +44,14 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# Security/API Keys/Sensitive files
 /android/app/google-services.json
+/ios/Runner/GoogleService-Info.plist
+*.env
+key.properties
+lib/firebase_options.dart
 
+# Build artifacts
 AGENTS.md
 GEMINI.md
 context.md

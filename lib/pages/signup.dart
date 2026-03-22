@@ -19,6 +19,7 @@ class _SignUpState extends State<SignUp> {
   TextEditingController namecontroller = TextEditingController();
   TextEditingController passwordcontroller = TextEditingController();
   TextEditingController mailcontroller = TextEditingController();
+  TextEditingController confirmpasswordcontroller = TextEditingController();
 
   bool isLoading = false; // Biến trạng thái để xoay vòng vòng
 
@@ -37,6 +38,11 @@ class _SignUpState extends State<SignUp> {
     }
     if (passwordError != null) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(passwordError)));
+      return;
+    }
+
+    if (passwordcontroller.text != confirmpasswordcontroller.text) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Mật khẩu xác nhận không khớp!")));
       return;
     }
 
@@ -148,6 +154,18 @@ class _SignUpState extends State<SignUp> {
                   child: TextField(
                     obscureText: true,
                     controller: passwordcontroller,
+                    decoration: const InputDecoration(border: InputBorder.none, prefixIcon: Icon(Icons.lock)),
+                  ),
+                ),
+                const SizedBox(height: 20.0),
+                const Text("Confirm Password", style: TextStyle(color: Colors.white, fontSize: 20.0)),
+                const SizedBox(height: 10.0),
+                Container(
+                  margin: const EdgeInsets.only(right: 30.0),
+                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)),
+                  child: TextField(
+                    obscureText: true,
+                    controller: confirmpasswordcontroller,
                     decoration: const InputDecoration(border: InputBorder.none, prefixIcon: Icon(Icons.lock)),
                   ),
                 ),

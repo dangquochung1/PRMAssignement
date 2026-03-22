@@ -5,6 +5,8 @@ import 'package:prmproject/pages/logout.dart';
 import 'package:prmproject/pages/delete_account.dart';
 import 'package:prmproject/services/shared_pref.dart';
 import 'package:prmproject/services/sync_service.dart';
+import 'package:prmproject/pages/change_password.dart';
+
 class Profile extends StatefulWidget {
   const Profile({super.key});
 
@@ -484,42 +486,16 @@ class _ProfileState extends State<Profile> {
                         ),
                       ),
                     ),
+                    const SizedBox(height: 12),
 
-                    const SizedBox(height: 24),
-
+                    // Đổi mật khẩu
                     _buildSettingItem(
-                      icon: Icons.cloud_download_outlined,
-                      iconColor: const Color(0xFF1565C0),
-                      title: "Đồng bộ từ đám mây",
-                      subtitle:
-                          "Lấy ngân sách, ví, nhãn… từ Firebase (ghi đè bản trên máy)",
-                      onTap: () async {
-                        String? uid =
-                            await SharedPreferenceHelper().getUserId();
-                        if (uid == null) return;
-                        if (!mounted) return;
-                        showDialog(
-                          context: context,
-                          barrierDismissible: false,
-                          builder: (_) => const Center(
-                              child: CircularProgressIndicator(
-                                  color: Color(0xFFD4A843))),
-                        );
-                        try {
-                          await SyncService.pullFromFirestore(uid);
-                        } finally {
-                          if (mounted) Navigator.pop(context);
-                        }
-                        await _loadData();
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              backgroundColor: Color(0xFF2E7D32),
-                              content: Text(
-                                  "Đã tải dữ liệu từ đám mây. Mở lại tab Ngân sách / Ví để xem."),
-                            ),
-                          );
-                        }
+                      icon: Icons.lock_outline,
+                      iconColor: const Color(0xFFE67E22),
+                      title: "Bảo mật",
+                      subtitle: "Đổi mật khẩu",
+                      onTap: () {
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => const ChangePassword()));
                       },
                     ),
 

@@ -7,6 +7,7 @@ import 'package:prmproject/services/shared_pref.dart';
 import 'package:prmproject/utils/validator.dart'; // Import validate
 import 'dart:async'; // Cho TimeoutException
 import 'package:prmproject/services/sync_service.dart';
+import 'package:prmproject/pages/forgot_password.dart';
 class Login extends StatefulWidget {
   const Login({super.key});
 
@@ -165,7 +166,26 @@ class _LoginState extends State<Login> {
                         hintStyle: TextStyle(fontSize: 18.0, color: Color(0xff3f3d65), fontWeight: FontWeight.bold)),
                   ),
                 ),
-                const SizedBox(height: 50.0),
+                const SizedBox(height: 15.0),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const ForgotPassword()));
+                  },
+                  child: const Align(
+                    alignment: Alignment.centerRight,
+                    child: Padding(
+                      padding: EdgeInsets.only(right: 30.0),
+                      child: Text(
+                        "Forgot Password?",
+                        style: TextStyle(
+                            color: Color(0xff3f3d65),
+                            fontSize: 16.0,
+                            fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 25.0),
 
                 Padding(
                   padding: const EdgeInsets.only(right: 30.0),
